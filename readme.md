@@ -1,0 +1,1 @@
+parse_data.py is the main script. Everything else are helper classes
