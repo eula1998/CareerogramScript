@@ -1,6 +1,6 @@
 from xlrd import open_workbook
 from dbparser import DBParser
-from course_translation import translate, categorize
+from us_course_translation import translate, categorize
 
 def change(i):
     if i == ',' or i == ';' or i == '.':

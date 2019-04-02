@@ -20,10 +20,9 @@ class JobNode(Node):
 
 class SkillNode(Node):
     def __init__(self, name):
-        super().__init__(name, category)
+        super().__init__(name)
         self.jobs = []
         self.courses = []
-        self.category = category
 
     def count_category(self, category):
         count = 0
@@ -131,26 +130,26 @@ class CareerGraph():
         # formatted according to this tutorial , credited to Konstya for finding it
         # https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
         # not sure how to format this thingy, interactive enough though
-    def output_json_3djs(self):
-        file = []
-        file.append("{")
-        file.append("\t\"nodes\": [")
-        for s in self.skill_nodes:
-            file.append("\t\t{{\"id\": \"{}\", \"group\": 1}},".format(self.skill_nodes[s].name))
-        for s in self.course_nodes:
-            file.append("\t\t{{\"id\": \"{}\", \"group\": 2}},".format(self.course_nodes[s].name))
-        for s in self.job_nodes:
-            file.append("\t\t{{\"id\": \"{}\", \"group\": 3}},".format(self.job_nodes[s].name))
-        file.append("],")
-        file.append("\t\"links\": [")
-        for s in self.skill_nodes:
-            for j in self.skill_nodes[s].jobs:
-                file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, j.name))
-            for c in self.skill_nodes[s].courses:
-                file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, c.name))
-        file.append("\t]")
-        file.append("}")
-        return file
+    # def output_json_3djs(self):
+    #     file = []
+    #     file.append("{")
+    #     file.append("\t\"nodes\": [")
+    #     for s in self.skill_nodes:
+    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 1}},".format(self.skill_nodes[s].name))
+    #     for s in self.course_nodes:
+    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 2}},".format(self.course_nodes[s].name))
+    #     for s in self.job_nodes:
+    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 3}},".format(self.job_nodes[s].name))
+    #     file.append("],")
+    #     file.append("\t\"links\": [")
+    #     for s in self.skill_nodes:
+    #         for j in self.skill_nodes[s].jobs:
+    #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, j.name))
+    #         for c in self.skill_nodes[s].courses:
+    #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, c.name))
+    #     file.append("\t]")
+    #     file.append("}")
+    #     return file
 
 # formatted according to this tutorial:
 # http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
@@ -170,4 +169,6 @@ class CareerGraph():
         coursenodes = self.course_nodes.keys()
         skillnodes = self.skill_nodes.keys()
         jobnodes = self.job_nodes.keys()
+
+        
         pass

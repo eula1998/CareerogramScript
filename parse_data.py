@@ -4,6 +4,7 @@ from career_graph import CareerGraph
 from parser_us_job import UsJobParser
 from parser_russian_job import RussianJobParser
 from parser_wpi_course import WpiCourseParser
+from parser_finu_course import FinUCourseParser
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
 
@@ -32,21 +33,7 @@ def labelTags(tags, filename):
         row = [cell.value for cell in sheet.row(row_idx)]
         row[0] = row[0].lstrip().rstrip()
         cats[row[0]] = row[1].lower().lstrip().rstrip()
-        # if row[0] not in tags:
-        #     print("not a valid tag: ", "\"{}\"".format(row[0]))
-    # for e in tags:
-    #     if e not in cats:
-    #         print("not labeled: ", e)
 
-    # for e in cats:
-    #     print("\"{}\" : \"{}\",".format(e, cats[e]))
-
-    # s = set()
-    # for e in cats:
-    #     # print("\"{}\" : \"{}\",".format(e, cats[e]))
-    #     s.add(cats[e])
-    # for e in s:
-    #     print(e)
 
 #######################################################
 # Main Script
@@ -65,45 +52,30 @@ ru_job_parser.parse()
 ru_job_tags = ru_job_parser.tags
 ru_jobs = ru_job_parser.jobs
 
-# wpi_course_parser = WpiCourseParser("WPI Tracks.xlsx")
-# wpi_course_parser.parse()
-# wpi_course_tags = wpi_course_parser.tags
-# wpi_courses = wpi_course_parser.courses
+wpi_course_parser = WpiCourseParser("WPI Tracks.xlsx")
+wpi_course_parser.parse()
+wpi_course_tags = wpi_course_parser.tags
+wpi_courses = wpi_course_parser.courses
 
-printDict(ru_job_tags)
-# printDict(wpi_course_tags)
+finu_course_parser = FinUCourseParser("FinU Tracks.xlsx")
+finu_course_parser.parse()
+finu_course_tags = finu_course_parser.tags
+finu_courses = finu_course_parser.courses
+
 
 # labelTags(job_tags, "US Job Glossary.xlsx")
-
-
-
-# count = 0
-# for t in job_tags:
-#     if t in wpi_course_tags:
-#         # print(t)
-#         count +=1
-#
-# print()
-# print("number of job tags: ", len(job_tags))
-# print("number of course tags:", len(wpi_course_tags))
-# print("number of overlap: ", count)
-# print("percentage: ", count / len(job_tags))
-# print()
-
-
-#------------------------------------------------------
-# PRINT tag frequency
-#------------------------------------------------------
-# for e in keys:
-#     print(e, ",", wpi_course_tags[e])
 
 
 #------------------------------------------------------
 # MAKE GRAPH from job list
 #------------------------------------------------------
 careergraph = CareerGraph()
-# careergraph.import_job(job_list=us_job_parser.jobs)
-# careergraph.import_courses(course_list=wpi_course_parser.courses)
+careergraph.import_job(job_list=us_job_parser.jobs)
+careergraph.import_job(job_list=ru_job_parser.jobs)
+careergraph.import_courses(course_list=wpi_course_parser.courses)
+careergraph.import_courses(course_list=finu_course_parser.courses)
+
+
 # file = careergraph.output_csv_edges()
 # writeToCSV("us_job_data/edges.csv", file)
 # json = careergraph.output_json_3djs()

@@ -1,5 +1,3 @@
-# from job_tag_translation import translate
-
 class DBParser:
     def __init__(self, filename):
         self.filename = filename
