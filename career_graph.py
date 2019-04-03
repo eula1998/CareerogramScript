@@ -1,10 +1,8 @@
-import csv
 import networkx as nx
 import pandas as pd
 import math
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
-
 
 def initialize_df_cell_and_incr(df, index, col):
     # the dataframe is initialized to nan
@@ -63,10 +61,10 @@ class CareerGraph():
 # IMPORTS DATA
 ########################################################
     # import data structure
-    # job_list: (category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
+    # job_list: (country, category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
     # course_list: (school, course number, course name, skills)
 
-    def import_job(self, job_list):
+    def import_jobs(self, job_list):
         for j in job_list:
             jn = JobNode(j[0], j[1], j[2], j[3])
             # responsibilities
@@ -83,8 +81,6 @@ class CareerGraph():
                 self.add_skill_from_job(jn, jn.required, t)
             self.job_nodes[jn.name] = jn
 
-        # if "" in self.skill_nodes:
-        #     del self.skill_nodes[""]
 
     def import_courses(self, course_list):
         for c in course_list:
@@ -93,8 +89,6 @@ class CareerGraph():
                 self.add_skill_from_course(cn, cn.skills, t)
             self.course_nodes[cn.name] = cn
 
-        # if "" in self.skill_nodes:
-        #     del self.skill_nodes[""]
 
 ########################################################
 # PRIVATE FUNCTIONS
@@ -138,44 +132,7 @@ class CareerGraph():
             l.append(row)
         return l
 
-        # for index.html and graph.json
-        # formatted according to this tutorial , credited to Konstya for finding it
-        # https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
-        # not sure how to format this thingy, interactive enough though
-    # def output_json_3djs(self):
-    #     file = []
-    #     file.append("{")
-    #     file.append("\t\"nodes\": [")
-    #     for s in self.skill_nodes:
-    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 1}},".format(self.skill_nodes[s].name))
-    #     for s in self.course_nodes:
-    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 2}},".format(self.course_nodes[s].name))
-    #     for s in self.job_nodes:
-    #         file.append("\t\t{{\"id\": \"{}\", \"group\": 3}},".format(self.job_nodes[s].name))
-    #     file.append("],")
-    #     file.append("\t\"links\": [")
-    #     for s in self.skill_nodes:
-    #         for j in self.skill_nodes[s].jobs:
-    #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, j.name))
-    #         for c in self.skill_nodes[s].courses:
-    #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, c.name))
-    #     file.append("\t]")
-    #     file.append("}")
-    #     return file
-
-# formatted according to this tutorial:
-# http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
-    # def output_csv_edges(self):
-    #     file = []
-    #     file.append(("skill", "entity"))
-    #     for s in self.skill_nodes:
-    #         for j in self.skill_nodes[s].jobs:
-    #             file.append((s, j.name))
-    #         for c in self.skill_nodes[s].courses:
-    #             file.append((s, c.name))
-    #     return file
-
-    def set_up_skill_dataframe(self):
+    def set_up_skill_dataframe(self, make_csv=False):
         # order of the category variable
         # currently ds, ai, ml, se, fe
         ru_jobs = [[],[],[],[],[]]
@@ -187,6 +144,7 @@ class CareerGraph():
             us_jobs[i] = [self.job_nodes[k] for k in self.job_nodes
                                 if (self.job_nodes[k].country == "US" and self.job_nodes[k].category == c)]
 
+        # columns with raw data
         columns = []
         scat = ["minimum", "preferred", "required", "responsibility"]
         country = ["ru", "us"]
@@ -218,6 +176,7 @@ class CareerGraph():
                 for s in j.required:
                     initialize_df_cell_and_incr(df, s.name, "us " + c + " required")
 
+        # columns produced using the raw data
         combined = {
             "us data scientist": ["us data scientist minimum", "us data scientist preferred", "us data scientist required", "us data scientist responsibility"],
             "us artificial intelligence": ["us artificial intelligence minimum", "us artificial intelligence preferred", "us artificial intelligence required", "us artificial intelligence responsibility"],
@@ -241,28 +200,32 @@ class CareerGraph():
         for c in combined:
             df[c] = df[combined[c]].sum(axis=1)
 
-        # df.to_csv(path_or_buf="./data/skill_count.csv", index=True)
+        # sort the columns by name
+        df = df.reindex(sorted(df.columns), axis=1)
+        if make_csv:
+            df.to_csv(path_or_buf="./combined_data/skill_count.csv", index=True)
+
         self.skill_df = df
 
 
     # outputs the top 20 skills for each category and each skill column
     # returns a dictionary of which the key = column heading, containing the 20
     # skills that occur in a column most frequently
-    def top_20_skills(self):
+    def top_20_skills(self, make_csv=False):
         top20 = {}
         # retrieves the list of columns
         for c in list(self.skill_df):
             temp_df = self.skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
             top20[c] = list(temp_df.head(20).index.values)
-            # filter out the skills that do not exist
+            # filter out the skills that do not exist in that category
             top20[c] = [s for s in top20[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
             while len(top20[c]) < 20:
                 top20[c].append(None)
 
         temp_df = pd.DataFrame(top20)
-        # temp_df.to_csv(path_or_buf="./top20.csv", index=False)
+        if make_csv:
+            temp_df.to_csv(path_or_buf="./combined_data/top20.csv", index=False)
         return top20
-
 
     def drawNetworkXGraph(self):
         G = nx.Graph()
@@ -276,4 +239,43 @@ class CareerGraph():
             for j in self.skill_nodes[s].jobs:
                 edges.append((s, j.name))
 
-        # print(len(edges))
+
+
+
+
+                # for index.html and graph.json
+                # formatted according to this tutorial , credited to Konstya for finding it
+                # https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
+                # not sure how to format this thingy, interactive enough though
+            # def output_json_3djs(self):
+            #     file = []
+            #     file.append("{")
+            #     file.append("\t\"nodes\": [")
+            #     for s in self.skill_nodes:
+            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 1}},".format(self.skill_nodes[s].name))
+            #     for s in self.course_nodes:
+            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 2}},".format(self.course_nodes[s].name))
+            #     for s in self.job_nodes:
+            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 3}},".format(self.job_nodes[s].name))
+            #     file.append("],")
+            #     file.append("\t\"links\": [")
+            #     for s in self.skill_nodes:
+            #         for j in self.skill_nodes[s].jobs:
+            #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, j.name))
+            #         for c in self.skill_nodes[s].courses:
+            #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, c.name))
+            #     file.append("\t]")
+            #     file.append("}")
+            #     return file
+
+        # formatted according to this tutorial:
+        # http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
+            # def output_csv_edges(self):
+            #     file = []
+            #     file.append(("skill", "entity"))
+            #     for s in self.skill_nodes:
+            #         for j in self.skill_nodes[s].jobs:
+            #             file.append((s, j.name))
+            #         for c in self.skill_nodes[s].courses:
+            #             file.append((s, c.name))
+            #     return file

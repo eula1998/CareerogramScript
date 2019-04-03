@@ -16,8 +16,8 @@ class UsJobParser(DBParser):
 
     def parse(self):
         wb = open_workbook(self.filename)
+        # gets the first sheet
         sheet = wb.sheet_by_index(0)
-        # header = [cell.value for cell in sheet.row(0)]
         # skipping the header row
         for row_idx in range(1, sheet.nrows):
             row = [cell.value for cell in sheet.row(row_idx)]

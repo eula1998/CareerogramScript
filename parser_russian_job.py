@@ -16,8 +16,9 @@ class RussianJobParser(DBParser):
 
     def parse(self):
         wb = open_workbook(self.filename)
-        sheet = wb.sheet_by_index(2)
-        # header = [cell.value for cell in sheet.row(0)]
+        # finds the second sheet
+        sheet = wb.sheet_by_index(1)
+        
         # skipping the header row
         for row_idx in range(1, sheet.nrows):
             row = [cell.value for cell in sheet.row(row_idx)]

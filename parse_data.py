@@ -24,15 +24,15 @@ def printDict(dict):
     for e in keys:
         print(e, ",", dict[e])
 
-def labelTags(tags, filename):
-    wb = open_workbook(filename)
-    sheet = wb.sheet_by_index(0)
-    cats = {}
-
-    for row_idx in range(1, sheet.nrows):
-        row = [cell.value for cell in sheet.row(row_idx)]
-        row[0] = row[0].lstrip().rstrip()
-        cats[row[0]] = row[1].lower().lstrip().rstrip()
+# def labelTags(tags, filename):
+#     wb = open_workbook(filename)
+#     sheet = wb.sheet_by_index(0)
+#     cats = {}
+#
+#     for row_idx in range(1, sheet.nrows):
+#         row = [cell.value for cell in sheet.row(row_idx)]
+#         row[0] = row[0].lstrip().rstrip()
+#         cats[row[0]] = row[1].lower().lstrip().rstrip()
 
 
 #######################################################
@@ -71,13 +71,12 @@ finu_courses = finu_course_parser.courses
 # MAKE GRAPH from job list
 #------------------------------------------------------
 careergraph = CareerGraph()
-careergraph.import_job(job_list=us_job_parser.jobs)
-careergraph.import_job(job_list=ru_job_parser.jobs)
+careergraph.import_jobs(job_list=us_job_parser.jobs)
+careergraph.import_jobs(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
-careergraph.set_up_skill_dataframe()
-top20 = careergraph.top_20_skills()
-# printDict(top20)
+careergraph.set_up_skill_dataframe(make_csv=False)
+top20 = careergraph.top_20_skills(make_csv=False)
 
 # careergraph.drawNetworkXGraph()
 
