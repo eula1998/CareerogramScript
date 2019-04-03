@@ -3,7 +3,7 @@ from dbparser import DBParser
 from ru_course_translation import translate, categorize
 
 def change(i):
-    if i == ',' or i == ';' or i == '.':
+    if i == ',' or i == ';':# or i == '.':
         return '|'
     if i == '|':
         return '/'
@@ -24,7 +24,7 @@ class FinUCourseParser(DBParser):
             # row index, course name, topics/skills
             self.parseRow(str(row_idx), row[2], row[4])
         # TODO deal with subjects and disciplines
-        del self.tags[""]
+        # del self.tags[""]
 
     def parseRow(self, key, course_name, skills):
         skills = self.parseTags(skills, change, translate)

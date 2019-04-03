@@ -1,6 +1,5 @@
 *.xlsx
 *.xls
+*.csv
+*.txt
 __pycache__/
-ru_job_data/
-survey_data/
-us_job_data/

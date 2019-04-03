@@ -62,6 +62,7 @@ finu_course_parser.parse()
 finu_course_tags = finu_course_parser.tags
 finu_courses = finu_course_parser.courses
 
+# printDict(finu_course_tags) # py parse_data.py > ru_job_data/finu_course_tags.csv
 
 # labelTags(job_tags, "US Job Glossary.xlsx")
 
@@ -74,6 +75,11 @@ careergraph.import_job(job_list=us_job_parser.jobs)
 careergraph.import_job(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
+careergraph.set_up_skill_dataframe()
+top20 = careergraph.top_20_skills()
+# printDict(top20)
+
+# careergraph.drawNetworkXGraph()
 
 
 # file = careergraph.output_csv_edges()

@@ -3,7 +3,7 @@ from dbparser import DBParser
 from ru_job_tag_translation import translate, categorize
 
 def change(i):
-    if i == ',' or i == ';' or i == '.':
+    if i == ',' or i == ';':# or i == '.':
         return '|'
     if i == '|':
         return '/'
@@ -24,7 +24,7 @@ class RussianJobParser(DBParser):
             # category, company, job_title, responsibility, minimum, preferred, required
             self.parseRow(row[0], row[1], row[2], row[8], row[9], row[10], row[11])
 
-        del self.tags[""]
+        # del self.tags[""]
 
     def parseRow(self, category, company, job_title, responsibility, minimum, preferred, required):
         # parse responsibility
@@ -36,4 +36,4 @@ class RussianJobParser(DBParser):
         # parse required
         required = self.parseTags(required, change, translate)
         #(category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
-        self.jobs.append((category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
+        self.jobs.append(("RU", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))

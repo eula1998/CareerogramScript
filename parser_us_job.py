@@ -24,7 +24,7 @@ class UsJobParser(DBParser):
             # category, company, job_title, responsibility, minimum, preferred, required
             self.parseRow(row[0], row[1], row[2], row[8], row[9], row[10], row[11])
 
-        del self.tags[""]
+        # del self.tags[""]
 
     def parseRow(self, category, company, job_title, responsibility, minimum, preferred, required):
         # parse responsibility
@@ -36,4 +36,4 @@ class UsJobParser(DBParser):
         # parse required
         required = self.parseTags(required, change, translate)
         #(category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
-        self.jobs.append((category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
+        self.jobs.append(("US", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
