@@ -28,5 +28,5 @@ class FinUCourseParser(DBParser):
 
     def parseRow(self, key, course_name, skills):
         skills = self.parseTags(skills, change, translate)
-        self.courses.append(("FinU", key, course_name, skills))
+        self.courses.append(("finu", key, course_name, skills))
         # self.courses_lookup[course_number] = ("FinU", course_number, course_name, skills)

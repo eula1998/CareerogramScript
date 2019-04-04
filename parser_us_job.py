@@ -36,4 +36,4 @@ class UsJobParser(DBParser):
         # parse required
         required = self.parseTags(required, change, translate)
         #(category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
-        self.jobs.append(("US", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
+        self.jobs.append(("us", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))

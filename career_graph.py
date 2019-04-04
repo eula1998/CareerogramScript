@@ -22,6 +22,7 @@ class JobNode(Node):
         self.job_title = job_title
         key = country + ";" + category + ";" + company + ";" + job_title
         super().__init__(key)
+        # list of skills
         self.preferred = []
         self.minimum = []
         self.required = []
@@ -56,6 +57,8 @@ class CareerGraph():
         self.skill_nodes = {}
         self.course_nodes = {}
         self.skill_df = None
+        self.job_nodes_by_category = None
+
 
 ########################################################
 # IMPORTS DATA
@@ -133,21 +136,27 @@ class CareerGraph():
         return l
 
     def set_up_skill_dataframe(self, make_csv=False):
+        # if self.skill_df != None:
+        #     print("WARNING: You are recalculating the dataframe." +
+        #     "This may be wasted resources if the graph has not been changed")
+
         # order of the category variable
         # currently ds, ai, ml, se, fe
-        ru_jobs = [[],[],[],[],[]]
-        us_jobs = [[],[],[],[],[]]
-        for i in range(len(categories)):
-            c = categories[i]
-            ru_jobs[i] = [self.job_nodes[k] for k in self.job_nodes
-                                if (self.job_nodes[k].country == "RU" and self.job_nodes[k].category == c)]
-            us_jobs[i] = [self.job_nodes[k] for k in self.job_nodes
-                                if (self.job_nodes[k].country == "US" and self.job_nodes[k].category == c)]
+        self.job_nodes_by_category = {}
+        job_count_by_category = {}
+        for c in categories:
+            self.job_nodes_by_category["us " + c] = [self.job_nodes[k] for k in self.job_nodes
+                                if (self.job_nodes[k].country == "us" and self.job_nodes[k].category == c)]
+            self.job_nodes_by_category["ru " + c] = [self.job_nodes[k] for k in self.job_nodes
+                                if (self.job_nodes[k].country == "ru" and self.job_nodes[k].category == c)]
+            job_count_by_category["us " + c] = [len(self.job_nodes_by_category["us " + c])]
+            job_count_by_category["ru " + c] = [len(self.job_nodes_by_category["ru " + c])]
 
         # columns with raw data
         columns = []
         scat = ["minimum", "preferred", "required", "responsibility"]
         country = ["ru", "us"]
+
         for sc in scat:
             for cat in categories:
                 for c in country:
@@ -155,9 +164,8 @@ class CareerGraph():
 
         df = pd.DataFrame(index=self.skill_nodes.keys(), columns=columns, dtype=int)
 
-        for i in range(len(categories)):
-            c = categories[i]
-            for j in ru_jobs[i]:
+        for c in categories:
+            for j in self.job_nodes_by_category["ru " + c]:
                 for s in j.minimum:
                     initialize_df_cell_and_incr(df, s.name, "ru " + c + " minimum")
                 for s in j.preferred:
@@ -166,7 +174,7 @@ class CareerGraph():
                     initialize_df_cell_and_incr(df, s.name, "ru " + c + " responsibility")
                 for s in j.required:
                     initialize_df_cell_and_incr(df, s.name, "ru " + c + " required")
-            for j in us_jobs[i]:
+            for j in self.job_nodes_by_category["us " + c]:
                 for s in j.minimum:
                     initialize_df_cell_and_incr(df, s.name, "us " + c + " minimum")
                 for s in j.preferred:
@@ -204,6 +212,8 @@ class CareerGraph():
         df = df.reindex(sorted(df.columns), axis=1)
         if make_csv:
             df.to_csv(path_or_buf="./combined_data/skill_count.csv", index=True)
+            temp_df = pd.DataFrame(job_count_by_category)
+            temp_df.to_csv(path_or_buf="./combined_data/job_count.csv", index=False)
 
         self.skill_df = df
 
@@ -212,32 +222,86 @@ class CareerGraph():
     # returns a dictionary of which the key = column heading, containing the 20
     # skills that occur in a column most frequently
     def top_20_skills(self, make_csv=False):
+        # TODO ValueError:The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+        # if self.skill_df == None:
+        #     self.set_up_skill_dataframe()
+
         top20 = {}
         # retrieves the list of columns
-        for c in list(self.skill_df):
+        for c in list(self.skill_df.columns.values):
             temp_df = self.skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
             top20[c] = list(temp_df.head(20).index.values)
             # filter out the skills that do not exist in that category
             top20[c] = [s for s in top20[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
+
+        if make_csv:
+            for c in top20:
+                while len(top20[c]) < 20:
+                    top20[c].append(None)
+            temp_df = pd.DataFrame(top20)
+            temp_df.to_csv(path_or_buf="./combined_data/top20.csv", index=False)
+        return top20
+
+
+    # percentage of jobs need the skill in each categories
+    def top_20_distribution(self, make_csv=True, top20=None):
+        if top20 == None:
+            top20 = self.top_20_skills()
+        for c in top20:
             while len(top20[c]) < 20:
                 top20[c].append(None)
 
         temp_df = pd.DataFrame(top20)
+
+        columns = {}
+        # skill category
+        scat = ["minimum", "preferred", "required", "responsibility"]
+        country = ["ru", "us"]
+        for sc in scat:
+            for cat in categories:
+                for c in country:
+                    columns[c + " " + cat + " " + sc] = c + " " + cat + " " + sc + " distribution"
+
+        for c in columns:
+            temp_df[columns[c]] = 0.0
+
+        for c in columns:
+            for i in range(len(temp_df.index.values)):
+                # temp_df.at[i, columns[c]] = 1
+                if temp_df.at[i, c] != None:
+                    # percentage = numberOfSkillsInThatCategory / number_of_jobs_in_that_job_category
+                    temp_df.at[i, columns[c]] = self.skill_df.at[temp_df.at[i, c], c] / len(self.job_nodes_by_category[c.rsplit(' ', 1)[0]])
+
+        for c in categories:
+            temp_df[c + " distribution"] = 0.0
+            for i in range(len(temp_df.index.values)):
+                if temp_df.at[i, c] != None:
+                    temp_df.at[i, c + " distribution"] = self.skill_df.at[temp_df.at[i, c], c] / (len(self.job_nodes_by_category["ru " + c]) + len(self.job_nodes_by_category["us " + c]))
+
+        # sort the columns by name
+        temp_df = temp_df.reindex(sorted(temp_df.columns), axis=1)
+
         if make_csv:
-            temp_df.to_csv(path_or_buf="./combined_data/top20.csv", index=False)
-        return top20
+            temp_df.to_csv(path_or_buf="./combined_data/top20_percentage.csv", index=False)
+
+
 
     def drawNetworkXGraph(self):
+        top20 = self.top_20_skills()
         G = nx.Graph()
-        courses = self.course_nodes.keys()
-        skills = self.skill_nodes.keys()
-        jobs = self.job_nodes.keys()
+        # skills = self.skill_nodes.keys()
         edges = []
-        for s in skills:
-            for c in self.skill_nodes[s].courses:
-                edges.append((s, c.name))
-            for j in self.skill_nodes[s].jobs:
-                edges.append((s, j.name))
+        for c in categories:
+            skills = top20[c]
+            for s in skills:
+                for c in self.skill_nodes[s].courses:
+                    edges.append((s, c.name))
+                for j in self.skill_nodes[s].jobs:
+                    edges.append((s, j.name))
+        G.add_edges_from(edges)
+        # layout = nx.spring_layout(G,iterations=50)
+        # print(nx.info(G))
+        # nx.draw_networkx(G)
 
 
 

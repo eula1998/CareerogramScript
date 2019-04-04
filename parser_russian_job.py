@@ -18,7 +18,7 @@ class RussianJobParser(DBParser):
         wb = open_workbook(self.filename)
         # finds the second sheet
         sheet = wb.sheet_by_index(1)
-        
+
         # skipping the header row
         for row_idx in range(1, sheet.nrows):
             row = [cell.value for cell in sheet.row(row_idx)]
@@ -37,4 +37,4 @@ class RussianJobParser(DBParser):
         # parse required
         required = self.parseTags(required, change, translate)
         #(category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
-        self.jobs.append(("RU", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
+        self.jobs.append(("ru", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
