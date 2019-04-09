@@ -5,7 +5,6 @@ from parser_us_job import UsJobParser
 from parser_russian_job import RussianJobParser
 from parser_wpi_course import WpiCourseParser
 from parser_finu_course import FinUCourseParser
-# import pandas as pd
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
 
@@ -13,7 +12,7 @@ categories = ["data scientist", "artificial intelligence", "machine learning", "
 # Functions
 #####################################################
 def writeToCSV(filename, list):
-    with open(filename, 'w+', newline='') as file:
+    with open(filename, 'w+', newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter = ",")
         # each row should be a tuple, maybe works with lists
         for row in list:
@@ -92,8 +91,11 @@ careergraph.import_jobs(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
 careergraph.set_up_skill_dataframe(make_csv=False)
-# top20 = careergraph.top_20_distribution()
-
+top20 = careergraph.top_20_distribution()
+file = careergraph.make_summary_csv()
+# for k in file:
+#     filename = "combined_data/%s.csv" %(k.replace(" ","_"))
+#     writeToCSV(filename=filename, list=file[k])
 
 
 #------------------------------------------------------
@@ -108,20 +110,38 @@ careergraph.set_up_skill_dataframe(make_csv=False)
 #         wpi_degrees_skills[d].update(skills)
 #
 # temp_df = careergraph.skill_df.copy()
+
+# py -3 parse_data.py > combined_data/ds_wpi_match.txt
+# for c in categories:
+#     # c = "data scientist"
+#     l = temp_df.index[temp_df[c] > 0].tolist()
+#     print("total number of skills in " + c + ": " + str(len(l) - 1))
 #
-# # py -3 parse_data.py > combined_data/ds_wpi_match.txt
-# c = "data scientist"
-# l = temp_df.index[temp_df[c] > 0].tolist()
-# print("total number of skills in " + c + ": " + str(len(l)))
-#
-# for d in wpi_degrees_skills:
-#     count = 0
-#     print("===================================")
-#     for s in wpi_degrees_skills[d]:
-#         if s in l:
-#             print(s)
-#             count+=1
-#     print("total matched skills of " + d + " at WPI: " + str(count), "\t", str(count/len(l) * 100) + "%")
+#     for d in wpi_degrees_skills:
+#         count = 0
+#         print("===================================")
+#         for s in wpi_degrees_skills[d]:
+#             if s in l and s != "":
+#                 print(s)
+#                 count+=1
+#         print("total matched skills of " + d + " at WPI: " + str(count), "\t", str(count/len(l)))
+#     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
+
+# print("Top 20 skills")
+# for c in categories:
+#     l = top20[c]
+#     print(c)
+#     for d in wpi_degrees_skills:
+#         count = 0
+#         print("===================================")
+#         for s in wpi_degrees_skills[d]:
+#             if s in l and s != "":
+#                 print(s)
+#                 count+=1
+#         print("total matched skills of " + d + " at WPI: " + str(count), "\t", str(count/len(l)))
+#     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+
 
 #------------------------------------------------------
 # Metrics
@@ -133,13 +153,17 @@ tag_count = 0
 for i in list(careergraph.skill_df.index.values):
     tag_count += careergraph.skill_df.at[i, "all"]
 
-# print(len(wpi_courses_lookup))
-# print(len(finu_courses))
 print("We gathered: ")
 print("\t", job_count, "jobs from two countries in", len(categories), "different categories")
 print("\t", course_count, "courses from two schools, out of which",
     len(wpi_courses_lookup), "from WPI, and", len(finu_courses), "from Financial University")
 print("\t", int(tag_count), "tags, out of which", skill_count, "are unique skills")
+
+
+
+
+
+
 
 # careergraph.drawNetworkXGraph()
 
@@ -156,37 +180,6 @@ print("\t", int(tag_count), "tags, out of which", skill_count, "are unique skill
 #------------------------------------------------------
 # WRITES us job output TO CSV FILES
 #------------------------------------------------------
-# keys = list(job_tags.keys())
-# keys.sort()
-# for c in categories:
-#     filename = "us_job_data/%s.csv" %(c.replace(" ","_"))
-#     list = []
-#     row = ["company", "job title", "skill type"]
-#     row.extend(keys)
-#     list.append(row)
-#     for j in jobs:
-#         if j[0] == c:
-#             row = [j[1], j[2], "responsibility"]
-#             for e in keys:
-#                     row.append(1 if e in j[3] else '')
-#             list.append(row)
-#
-#             row = [j[1], j[2], "minimum requirement"]
-#             for e in keys:
-#                     row.append(1 if e in j[4] else '')
-#             list.append(row)
-#
-#             row = [j[1], j[2], "preferred requirement"]
-#             for e in keys:
-#                     row.append(1 if e in j[5] else '')
-#             list.append(row)
-#
-#             row = [j[1], j[2], "required experience"]
-#             for e in keys:
-#                     row.append(1 if e in j[6] else '')
-#             list.append(row)
-#     writeToCSV(filename, list)
-#
 # with open("us_job_data/%s.csv" %("job_tag_summary"), 'w+', newline='') as file:
 #     writer = csv.writer(file, delimiter = ",")
 #     row = ["company", "job title", "skill type"]

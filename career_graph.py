@@ -284,6 +284,50 @@ class CareerGraph():
         if make_csv:
             temp_df.to_csv(path_or_buf="./combined_data/top20_percentage.csv", index=False)
 
+        return top20
+
+
+    def make_summary_csv(self):
+        keys = list(self.skill_nodes.keys())
+        keys.sort()
+        file = {}
+
+        all_list = []
+        for c in categories:
+            l = []
+            row = ["country", "company", "job title", "skill type"]
+            row.extend(keys)
+            l.append(row)
+            for j in self.job_nodes:
+                j = self.job_nodes[j]
+                if j.category == c:
+                    row = [j.country, j.company, j.job_title, "responsibility"]
+                    for e in keys:
+                            row.append(1 if self.skill_nodes[e] in j.responsibility else '')
+                    l.append(row)
+                    all_list.append(row)
+
+                    row = [j.country, j.company, j.job_title, "minimum requirement"]
+                    for e in keys:
+                            row.append(1 if self.skill_nodes[e] in j.minimum else '')
+                    l.append(row)
+                    all_list.append(row)
+
+                    row = [j.country, j.company, j.job_title, "preferred requirement"]
+                    for e in keys:
+                            row.append(1 if self.skill_nodes[e] in j.preferred else '')
+                    l.append(row)
+                    all_list.append(row)
+
+                    row = [j.country, j.company, j.job_title, "required experience"]
+                    for e in keys:
+                            row.append(1 if self.skill_nodes[e] in j.required else '')
+                    l.append(row)
+                    all_list.append(row)
+            file[c] = l
+        file["job_tag_summary"] = all_list
+        return file
+
 
 
     def drawNetworkXGraph(self):
