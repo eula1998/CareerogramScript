@@ -1,9 +1,8 @@
-# %matplotlib inline
 import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
-from node import Node, CourseNode, CategoryNode, SkillNode, JobNode
+from node import CourseNode, CategoryNode, SkillNode, JobNode
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
 
@@ -194,14 +193,16 @@ class CareerGraph():
     # outputs the top 20 skills for each category and each skill column
     # returns a dictionary of which the key = column heading, containing the 20
     # skills that occur in a column most frequently
-    def top_skills(self, count=20, make_csv=False):
+    def top_skills(self, count=20, make_csv=False, columns=None):
         # TODO ValueError:The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
         # if self.skill_df == None:
         #     self.set_up_skill_dataframe()
+        if columns == None:
+            columns = list(self.skill_df.columns.values)
 
         top = {}
         # retrieves the list of columns
-        for c in list(self.skill_df.columns.values):
+        for c in [cl for cl in columns if cl in list(self.skill_df.columns.values)]:
             temp_df = self.skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
             top[c] = list(temp_df.head(count).index.values)
             # filter out the skills that do not exist in that category
@@ -387,36 +388,36 @@ class CareerGraph():
         file = {}
 
         all_list = []
-        row = ["country", "company", "job title", "skill type"]
+        row = ["country + company + job title", "category"]
         row.extend(keys)
         all_list.append(row)
         for c in categories:
             l = []
-            row = ["country", "company", "job title", "skill type"]
+            row = ["country + company + job title", "category"]
             row.extend(keys)
             l.append(row)
             for j in self.job_nodes:
                 j = self.job_nodes[j]
                 if j.category == c:
-                    row = [j.country, j.company, j.job_title, "responsibility"]
+                    row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
                             row.append(1 if self.skill_nodes[e] in j.responsibility else 0)
                     l.append(row)
                     all_list.append(row)
 
-                    row = [j.country, j.company, j.job_title, "minimum requirement"]
+                    row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
                             row.append(1 if self.skill_nodes[e] in j.minimum else 0)
                     l.append(row)
                     all_list.append(row)
 
-                    row = [j.country, j.company, j.job_title, "preferred requirement"]
+                    row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
                             row.append(1 if self.skill_nodes[e] in j.preferred else 0)
                     l.append(row)
                     all_list.append(row)
 
-                    row = [j.country, j.company, j.job_title, "required experience"]
+                    row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
                             row.append(1 if self.skill_nodes[e] in j.required else 0)
                     l.append(row)
@@ -426,32 +427,70 @@ class CareerGraph():
         return file
 
 
-
+# tutorial: http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
     def drawNetworkXGraph(self):
-        top = self.top_skills(30)
+        top = self.top_skills(count=30, columns=categories)
         G = nx.Graph()
-        # skills = self.skill_nodes.keys()
         edges = []
-        # for c in categories:
-        #     skills = top[c]
-        #     for s in skills:
-        #         for c in self.skill_nodes[s].courses:
-        #             edges.append((s, c.name))
-        #         for j in self.skill_nodes[s].jobs:
-        #             edges.append((s, j.name))
+
+        all_nodes = set()
+        all_nodes.update(["c:" + c for c in categories])
 
         for c in self.category_nodes:
-            pass
+            cn = self.category_nodes[c]
+            for s in cn.skills:
+                if s in top[c]:
+                    edges.append((s, "c:" + c))
+                    all_nodes.add(s)
         G.add_edges_from(edges)
 
+        skill_size = {}
+        for c in top:
+            for s in top[c]:
+                if s not in skill_size:
+                    skill_size[s] = 0
+                skill_size[s] += self.category_nodes[c].skills[s]
 
-        nx.draw(G)
+        plt.figure(figsize=(12, 12))
+        # layout = nx.shell_layout(G, nlist=[["c:" + c for c in categories], list(skill_size.keys())])
+        layout = nx.kamada_kawai_layout(G)
+
+        nx.draw_networkx_edges(G, layout, width=1, edge_color="#cccccc")
+
+        # draw category nodes
+        category_size = [len(self.category_nodes[c].skills) * 15 for c in categories]
+        nodes = nx.draw_networkx_nodes(G,
+                       layout,
+                       nodelist=["c:" + c for c in categories],
+                       node_size=category_size,
+                       node_color='lightblue')
+        nodes.set_edgecolor('#888888')
+
+
+        # draw frequent skill nodes, size based on frequency of appearances
+        frequent_skills = [s for s in skill_size if G.degree(s) > 1]
+        frequent_skills_size = [skill_size[s] * 10 for s in frequent_skills]
+        nodes = nx.draw_networkx_nodes(G,
+                                    layout,
+                                    nodelist=frequent_skills,
+                                    node_color='#fc8d62',
+                                    node_size=frequent_skills_size)
+        nodes.set_edgecolor('#888888')
+        frequent_skills_edges = G.edges(frequent_skills)
+        nx.draw_networkx_edges(G, layout, edgelist=frequent_skills_edges, width=1, edge_color="#bbbbbb")
+
+
+        #draw remaining skill nodes
+        remaining_skills = [s for s in skill_size if G.degree(s) == 1]
+        remaining_skills_size = [skill_size[s] * 20 for s in remaining_skills]
+        nodes = nx.draw_networkx_nodes(G,
+                                    layout,
+                                    nodelist=remaining_skills,
+                                    node_size=remaining_skills_size,
+                                    node_color='#cccccc')
+        nodes.set_edgecolor('#888888')
+
+        nx.draw_networkx_labels(G, layout, font_size=8)
+
+        plt.axis('off')
         plt.show()
-        # print(nx.info(G))
-
-        # layout = nx.spring_layout(G,iterations=50)
-        # print(nx.info(G))
-        # nx.draw_networkx(G)
-
-        # gd = nx.dodecahedral_graph()
-        # nx.draw(gd,pos=nx.spring_layout(gd))

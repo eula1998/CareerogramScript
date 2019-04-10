@@ -95,13 +95,13 @@ careergraph.import_jobs(job_list=us_job_parser.jobs)
 careergraph.import_jobs(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
-# careergraph.set_up_skill_dataframe(make_csv=False)
+careergraph.set_up_skill_dataframe(make_csv=True)
 # top20 = careergraph.top_20_distribution()
 # writeToCSV("us_job_data/job_tag_distribution.csv", careergraph.calculate_skill_category_distribution_csv())
 # writeToCSVs("combined_data", careergraph.make_summary_csv())
-writeToCSVs("sql_files", careergraph.generate_sql_csv())
+# writeToCSVs("sql_files", careergraph.generate_sql_csv())
 
-# careergraph.drawNetworkXGraph()
+careergraph.drawNetworkXGraph()
 
 #------------------------------------------------------
 # Combined Analysis

@@ -4,3 +4,6 @@
 *.txt
 __pycache__/
 .ipynb_checkpoints/
+*.png
+*.jpg
+*.jpeg
