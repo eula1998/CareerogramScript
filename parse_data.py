@@ -11,6 +11,11 @@ categories = ["data scientist", "artificial intelligence", "machine learning", "
 #####################################################
 # Functions
 #####################################################
+def writeToCSVs(directory, dict):
+    for k in dict:
+        filename = "%s/%s.csv" %(directory, k.replace(" ","_"))
+        writeToCSV(filename=filename, list=dict[k])
+
 def writeToCSV(filename, list):
     with open(filename, 'w+', newline='', encoding="utf-8") as file:
         writer = csv.writer(file, delimiter = ",")
@@ -90,13 +95,13 @@ careergraph.import_jobs(job_list=us_job_parser.jobs)
 careergraph.import_jobs(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
-careergraph.set_up_skill_dataframe(make_csv=False)
-top20 = careergraph.top_20_distribution()
-file = careergraph.make_summary_csv()
-# for k in file:
-#     filename = "combined_data/%s.csv" %(k.replace(" ","_"))
-#     writeToCSV(filename=filename, list=file[k])
+# careergraph.set_up_skill_dataframe(make_csv=False)
+# top20 = careergraph.top_20_distribution()
+# writeToCSV("us_job_data/job_tag_distribution.csv", careergraph.calculate_skill_category_distribution_csv())
+# writeToCSVs("combined_data", careergraph.make_summary_csv())
+writeToCSVs("sql_files", careergraph.generate_sql_csv())
 
+# careergraph.drawNetworkXGraph()
 
 #------------------------------------------------------
 # Combined Analysis
@@ -111,7 +116,7 @@ file = careergraph.make_summary_csv()
 #
 # temp_df = careergraph.skill_df.copy()
 
-# py -3 parse_data.py > combined_data/ds_wpi_match.txt
+## py -3 parse_data.py > combined_data/ds_wpi_match.txt
 # for c in categories:
 #     # c = "data scientist"
 #     l = temp_df.index[temp_df[c] > 0].tolist()
@@ -146,62 +151,15 @@ file = careergraph.make_summary_csv()
 #------------------------------------------------------
 # Metrics
 #------------------------------------------------------
-job_count = len(careergraph.job_nodes)
-skill_count = len(careergraph.skill_nodes)
-course_count = len(careergraph.course_nodes)
-tag_count = 0
-for i in list(careergraph.skill_df.index.values):
-    tag_count += careergraph.skill_df.at[i, "all"]
-
-print("We gathered: ")
-print("\t", job_count, "jobs from two countries in", len(categories), "different categories")
-print("\t", course_count, "courses from two schools, out of which",
-    len(wpi_courses_lookup), "from WPI, and", len(finu_courses), "from Financial University")
-print("\t", int(tag_count), "tags, out of which", skill_count, "are unique skills")
-
-
-
-
-
-
-
-# careergraph.drawNetworkXGraph()
-
-
-# file = careergraph.output_csv_edges()
-# writeToCSV("us_job_data/edges.csv", file)
-# json = careergraph.output_json_3djs()
-# for e in json:
-#     print(e)
-# printDict(careergraph.skill_nodes)
-# writeToCSV("us_job_data/job_tag_distribution.csv", careergraph.calculate_skill_category_distribution_csv())
-
-
-#------------------------------------------------------
-# WRITES us job output TO CSV FILES
-#------------------------------------------------------
-# with open("us_job_data/%s.csv" %("job_tag_summary"), 'w+', newline='') as file:
-#     writer = csv.writer(file, delimiter = ",")
-#     row = ["company", "job title", "skill type"]
-#     row.extend(keys)
-#     writer.writerow(row)
-#     for j in jobs:
-#         row = [j[1], j[2], "responsibility"]
-#         for e in keys:
-#             row.append(1 if e in j[3] else '')
-#         writer.writerow(row)
+# job_count = len(careergraph.job_nodes)
+# skill_count = len(careergraph.skill_nodes)
+# course_count = len(careergraph.course_nodes)
+# tag_count = 0
+# for i in list(careergraph.skill_df.index.values):
+#     tag_count += careergraph.skill_df.at[i, "all"]
 #
-#         row = [j[1], j[2], "minimum requirement"]
-#         for e in keys:
-#             row.append(1 if e in j[4] else '')
-#         writer.writerow(row)
-#
-#         row = [j[1], j[2], "preferred requirement"]
-#         for e in keys:
-#             row.append(1 if e in j[5] else '')
-#         writer.writerow(row)
-#
-#         row = [j[1], j[2], "required experience"]
-#         for e in keys:
-#             row.append(1 if e in j[6] else '')
-#         writer.writerow(row)
+# print("We gathered: ")
+# print("\t", job_count, "jobs from two countries in", len(categories), "different categories")
+# print("\t", course_count, "courses from two schools, out of which",
+#     len(wpi_courses_lookup), "from WPI, and", len(finu_courses), "from Financial University")
+# print("\t", int(tag_count), "tags, out of which", skill_count, "are unique skills")

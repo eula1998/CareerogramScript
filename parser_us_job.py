@@ -21,12 +21,12 @@ class UsJobParser(DBParser):
         # skipping the header row
         for row_idx in range(1, sheet.nrows):
             row = [cell.value for cell in sheet.row(row_idx)]
-            # category, company, job_title, responsibility, minimum, preferred, required
-            self.parseRow(row[0], row[1], row[2], row[8], row[9], row[10], row[11])
+            # category, company, job_title, salary, responsibility, minimum, preferred, required
+            self.parseRow(row[0], row[1], row[2], row[3], row[8], row[9], row[10], row[11])
 
         # del self.tags[""]
 
-    def parseRow(self, category, company, job_title, responsibility, minimum, preferred, required):
+    def parseRow(self, category, company, job_title, salary, responsibility, minimum, preferred, required):
         # parse responsibility
         responsibility = self.parseTags(responsibility, change, translate)
         # parse minimum
@@ -36,4 +36,4 @@ class UsJobParser(DBParser):
         # parse required
         required = self.parseTags(required, change, translate)
         #(category, company, job_title, list_of_responsibility, list_of_minimum, list_of_preferred, list_of_required)
-        self.jobs.append(("us", category.lower(), company.lower(), job_title.lower(), responsibility, minimum, preferred, required))
+        self.jobs.append(("us", category.lower(), company.lower(), job_title.lower(), salary.lower(), responsibility, minimum, preferred, required))

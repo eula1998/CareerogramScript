@@ -1,6 +1,9 @@
+# %matplotlib inline
 import networkx as nx
+import matplotlib.pyplot as plt
 import pandas as pd
 import math
+from node import Node, CourseNode, CategoryNode, SkillNode, JobNode
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
 
@@ -10,46 +13,6 @@ def initialize_df_cell_and_incr(df, index, col):
         df.at[index, col] = 0
     df.at[index, col] = df.at[index, col] + 1
 
-class Node:
-    def __init__(self, name):
-        self.name = name
-
-class JobNode(Node):
-    def __init__(self, country, category, company, job_title):
-        self.country = country
-        self.category = category
-        self.company = company
-        self.job_title = job_title
-        key = country + ";" + category + ";" + company + ";" + job_title
-        super().__init__(key)
-        # list of skills
-        self.preferred = []
-        self.minimum = []
-        self.required = []
-        self.responsibility = []
-
-class SkillNode(Node):
-    def __init__(self, name):
-        super().__init__(name)
-        self.jobs = []
-        self.courses = []
-
-    def count_category(self, category):
-        count = 0
-        for j in self.jobs:
-            if j.category == category:
-                count+=1
-        return count #/ len(self.jobs) * 100
-
-class CourseNode(Node):
-    def __init__(self, school, course_number, course_name):
-        self.school = school
-        self.course_number = course_number
-        self.course_name = course_name
-        key = school + ";" + course_number + ";" + course_name
-        super().__init__(key)
-        self.skills = []
-
 class CareerGraph():
 
     def __init__(self):
@@ -58,7 +21,7 @@ class CareerGraph():
         self.course_nodes = {}
         self.skill_df = None
         self.job_nodes_by_category = None
-
+        self.category_nodes = {}
 
 ########################################################
 # IMPORTS DATA
@@ -69,21 +32,26 @@ class CareerGraph():
 
     def import_jobs(self, job_list):
         for j in job_list:
-            jn = JobNode(j[0], j[1], j[2], j[3])
-            # responsibilities
-            for t in j[4]:
-                self.add_skill_from_job(jn, jn.responsibility, t)
-            # minimum
-            for t in j[5]:
-                self.add_skill_from_job(jn, jn.minimum, t)
-            # preferred
-            for t in j[6]:
-                self.add_skill_from_job(jn, jn.preferred, t)
-            # required
-            for t in j[7]:
-                self.add_skill_from_job(jn, jn.required, t)
-            self.job_nodes[jn.name] = jn
+            jn = JobNode(country=j[0], category=j[1], company=j[2], job_title=j[3], salary=j[4])
 
+            if j[1] not in self.category_nodes:
+                self.category_nodes[j[1]] = CategoryNode(j[1])
+            cn = self.category_nodes[j[1]]
+            cn.jobs.append(jn)
+
+            # responsibilities
+            for t in j[5]:
+                self.add_skill_from_job(jn, jn.responsibility, t, cn)
+            # minimum
+            for t in j[6]:
+                self.add_skill_from_job(jn, jn.minimum, t, cn)
+            # preferred
+            for t in j[7]:
+                self.add_skill_from_job(jn, jn.preferred, t, cn)
+            # required
+            for t in j[8]:
+                self.add_skill_from_job(jn, jn.required, t, cn)
+            self.job_nodes[jn.name] = jn
 
     def import_courses(self, course_list):
         for c in course_list:
@@ -110,8 +78,13 @@ class CareerGraph():
         sn = self.add_skill(list_to_be_added, skill)
         sn.courses.append(course)
 
-    def add_skill_from_job(self, job, list_to_be_added, skill):
+    def add_skill_from_job(self, job, list_to_be_added, skill, cn):
         sn = self.add_skill(list_to_be_added, skill)
+
+        if skill not in cn.skills:
+            cn.skills[skill] = 0
+        cn.skills[skill] += 1
+
         sn.jobs.append(job)
 
 
@@ -221,32 +194,32 @@ class CareerGraph():
     # outputs the top 20 skills for each category and each skill column
     # returns a dictionary of which the key = column heading, containing the 20
     # skills that occur in a column most frequently
-    def top_20_skills(self, make_csv=False):
+    def top_skills(self, count=20, make_csv=False):
         # TODO ValueError:The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
         # if self.skill_df == None:
         #     self.set_up_skill_dataframe()
 
-        top20 = {}
+        top = {}
         # retrieves the list of columns
         for c in list(self.skill_df.columns.values):
             temp_df = self.skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
-            top20[c] = list(temp_df.head(20).index.values)
+            top[c] = list(temp_df.head(count).index.values)
             # filter out the skills that do not exist in that category
-            top20[c] = [s for s in top20[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
+            top[c] = [s for s in top[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
 
         if make_csv:
-            for c in top20:
-                while len(top20[c]) < 20:
-                    top20[c].append(None)
-            temp_df = pd.DataFrame(top20)
-            temp_df.to_csv(path_or_buf="./combined_data/top20.csv", index=False)
-        return top20
+            for c in top:
+                while len(top[c]) < count:
+                    top[c].append(None)
+            temp_df = pd.DataFrame(top)
+            temp_df.to_csv(path_or_buf="./combined_data/top%s.csv" %(str(count)), index=False)
+        return top
 
 
     # percentage of jobs need the skill in each categories
     def top_20_distribution(self, make_csv=True, top20=None):
         if top20 == None:
-            top20 = self.top_20_skills()
+            top20 = self.top_skills(20)
         for c in top20:
             while len(top20[c]) < 20:
                 top20[c].append(None)
@@ -286,6 +259,127 @@ class CareerGraph():
 
         return top20
 
+    def generate_sql_csv(self):
+        files = {}
+        # category: name
+        files["category"] = []
+        category_id_lookup = {}
+        id = 0
+        for c in categories:
+            category_id_lookup[c] = id
+            id += 1
+        row = ["id", "name"]
+        files["category"].append(row)
+        for c in categories:
+            row = [category_id_lookup[c], c]
+            files["category"].append(row)
+
+        # jobs: id, name, company, salary, category_id
+        files["job"] = []
+        job_id_lookup = {}
+        id = 0
+        for j in self.job_nodes:
+            job_id_lookup[j] = id
+            id+=1
+        row = ["id", "name", "company", "salary", "category_id"]
+        files["job"].append(row)
+
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            row = [job_id_lookup[j], jn.job_title, jn.company, jn.salary, category_id_lookup[jn.category]]
+            files["job"].append(row)
+
+        # skill: name
+        files["skill"] = []
+        skill_id_lookup = {}
+        id = 0
+        for s in self.skill_nodes:
+            skill_id_lookup[s] = id
+            id += 1
+        row = ["id", "name"]
+        files["skill"].append(row)
+
+        for s in self.skill_nodes:
+            row = [skill_id_lookup[s], s]
+            files["skill"].append(row)
+
+        # course: name, school
+        files["course"] = []
+        course_id_lookup = {}
+        id = 0
+        for c in self.course_nodes:
+            course_id_lookup[c] = id
+            id += 1
+        row = ["id", "name", "school"]
+        files["course"].append(row)
+
+        for c in self.course_nodes:
+            cn = self.course_nodes[c]
+            row = [course_id_lookup[c], cn.course_name, cn.school]
+            files["course"].append(row)
+
+        # job_minimum_requirement: id_job, id_skill
+        files["job_minimum_requirement"] = []
+        row = ["id_job", "id_skill"]
+        files["job_minimum_requirement"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.minimum:
+                row = [job_id_lookup[j], skill_id_lookup[s.name]]
+                files["job_minimum_requirement"].append(row)
+
+        # job_preferred_requirement: id_job, id_skill
+        files["job_preferred_requirement"] = []
+        row = ["id_job", "id_skill"]
+        files["job_preferred_requirement"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.preferred:
+                row = [job_id_lookup[j], skill_id_lookup[s.name]]
+                files["job_preferred_requirement"].append(row)
+
+        # job_required_experience: id_job, id_skill
+        files["job_required_experience"] = []
+        row = ["id_job", "id_skill"]
+        files["job_required_experience"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.required:
+                row = [job_id_lookup[j], skill_id_lookup[s.name]]
+                files["job_required_experience"].append(row)
+
+        # job_responsibility: id_job, id_skill
+        files["job_responsibility"] = []
+        row = ["id_job", "id_skill"]
+        files["job_responsibility"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.responsibility:
+                row = [job_id_lookup[j], skill_id_lookup[s.name]]
+                files["job_responsibility"].append(row)
+
+        # category_all_requirement: id_category, id_skill
+        files["category_all_requirement"] = []
+        row = ["id_category", "id_skill"]
+        files["category_all_requirement"].append(row)
+        for c in self.category_nodes:
+            cn = self.category_nodes[c]
+            for s in cn.skills:
+                row = [category_id_lookup[c], skill_id_lookup[s]]
+                files["category_all_requirement"].append(row)
+
+        # course_skill: id_course, id_skill
+        files["course_skill"] = []
+        row = ["id_course", "id_skill"]
+        files["course_skill"].append(row)
+        for c in self.course_nodes:
+            cn = self.course_nodes[c]
+            for s in cn.skills:
+                row = [course_id_lookup[c], skill_id_lookup[s.name]]
+                files["course_skill"].append(row)
+
+        return files
+
 
     def make_summary_csv(self):
         keys = list(self.skill_nodes.keys())
@@ -293,6 +387,9 @@ class CareerGraph():
         file = {}
 
         all_list = []
+        row = ["country", "company", "job title", "skill type"]
+        row.extend(keys)
+        all_list.append(row)
         for c in categories:
             l = []
             row = ["country", "company", "job title", "skill type"]
@@ -303,25 +400,25 @@ class CareerGraph():
                 if j.category == c:
                     row = [j.country, j.company, j.job_title, "responsibility"]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.responsibility else '')
+                            row.append(1 if self.skill_nodes[e] in j.responsibility else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country, j.company, j.job_title, "minimum requirement"]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.minimum else '')
+                            row.append(1 if self.skill_nodes[e] in j.minimum else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country, j.company, j.job_title, "preferred requirement"]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.preferred else '')
+                            row.append(1 if self.skill_nodes[e] in j.preferred else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country, j.company, j.job_title, "required experience"]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.required else '')
+                            row.append(1 if self.skill_nodes[e] in j.required else 0)
                     l.append(row)
                     all_list.append(row)
             file[c] = l
@@ -331,59 +428,30 @@ class CareerGraph():
 
 
     def drawNetworkXGraph(self):
-        top20 = self.top_20_skills()
+        top = self.top_skills(30)
         G = nx.Graph()
         # skills = self.skill_nodes.keys()
         edges = []
-        for c in categories:
-            skills = top20[c]
-            for s in skills:
-                for c in self.skill_nodes[s].courses:
-                    edges.append((s, c.name))
-                for j in self.skill_nodes[s].jobs:
-                    edges.append((s, j.name))
+        # for c in categories:
+        #     skills = top[c]
+        #     for s in skills:
+        #         for c in self.skill_nodes[s].courses:
+        #             edges.append((s, c.name))
+        #         for j in self.skill_nodes[s].jobs:
+        #             edges.append((s, j.name))
+
+        for c in self.category_nodes:
+            pass
         G.add_edges_from(edges)
+
+
+        nx.draw(G)
+        plt.show()
+        # print(nx.info(G))
+
         # layout = nx.spring_layout(G,iterations=50)
         # print(nx.info(G))
         # nx.draw_networkx(G)
 
-
-
-
-
-                # for index.html and graph.json
-                # formatted according to this tutorial , credited to Konstya for finding it
-                # https://bl.ocks.org/mbostock/ad70335eeef6d167bc36fd3c04378048
-                # not sure how to format this thingy, interactive enough though
-            # def output_json_3djs(self):
-            #     file = []
-            #     file.append("{")
-            #     file.append("\t\"nodes\": [")
-            #     for s in self.skill_nodes:
-            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 1}},".format(self.skill_nodes[s].name))
-            #     for s in self.course_nodes:
-            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 2}},".format(self.course_nodes[s].name))
-            #     for s in self.job_nodes:
-            #         file.append("\t\t{{\"id\": \"{}\", \"group\": 3}},".format(self.job_nodes[s].name))
-            #     file.append("],")
-            #     file.append("\t\"links\": [")
-            #     for s in self.skill_nodes:
-            #         for j in self.skill_nodes[s].jobs:
-            #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, j.name))
-            #         for c in self.skill_nodes[s].courses:
-            #             file.append("\t\t{{\"source\": \"{}\", \"target\": \"{}\", \"value\": 1}},".format(s, c.name))
-            #     file.append("\t]")
-            #     file.append("}")
-            #     return file
-
-        # formatted according to this tutorial:
-        # http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
-            # def output_csv_edges(self):
-            #     file = []
-            #     file.append(("skill", "entity"))
-            #     for s in self.skill_nodes:
-            #         for j in self.skill_nodes[s].jobs:
-            #             file.append((s, j.name))
-            #         for c in self.skill_nodes[s].courses:
-            #             file.append((s, c.name))
-            #     return file
+        # gd = nx.dodecahedral_graph()
+        # nx.draw(gd,pos=nx.spring_layout(gd))
