@@ -18,7 +18,7 @@ class CareerGraph():
         self.job_nodes = {}
         self.skill_nodes = {}
         self.course_nodes = {}
-        self.skill_df = None
+        self.skill_df = None # job skill only
         self.job_nodes_by_category = None
         self.category_nodes = {}
 
@@ -381,9 +381,12 @@ class CareerGraph():
 
         return files
 
-
+    # for ML
     def make_summary_csv(self):
-        keys = list(self.skill_nodes.keys())
+        # keys = list(self.skill_nodes.keys())
+
+        # selects the top 883 skills in the database, because Azure only takes that many columns
+        keys = (self.top_skills(count=883, make_csv=False, columns=["all"]))["all"]
         keys.sort()
         file = {}
 
@@ -391,6 +394,14 @@ class CareerGraph():
         row = ["country + company + job title", "category"]
         row.extend(keys)
         all_list.append(row)
+
+        category_factor = {
+            "data scientist" : 1,
+            "artificial intelligence" : 4,
+            "machine learning" : 6,
+            "software engineer" : 4,
+            "firmware engineering" : 20
+        }
         for c in categories:
             l = []
             row = ["country + company + job title", "category"]
@@ -401,25 +412,25 @@ class CareerGraph():
                 if j.category == c:
                     row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.responsibility else 0)
+                            row.append(1 * category_factor[c] if self.skill_nodes[e] in j.responsibility else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.minimum else 0)
+                            row.append(4 * category_factor[c] if self.skill_nodes[e] in j.minimum else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.preferred else 0)
+                            row.append(3 * category_factor[c] if self.skill_nodes[e] in j.preferred else 0)
                     l.append(row)
                     all_list.append(row)
 
                     row = [j.country + ";" + j.company + ";" + j.job_title, j.category]
                     for e in keys:
-                            row.append(1 if self.skill_nodes[e] in j.required else 0)
+                            row.append(2 * category_factor[c] if self.skill_nodes[e] in j.required else 0)
                     l.append(row)
                     all_list.append(row)
             file[c] = l
@@ -427,8 +438,10 @@ class CareerGraph():
         return file
 
 
-# tutorial: http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
-    def drawNetworkXGraph(self):
+# tutorial:
+# http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
+# https://www.youtube.com/watch?v=1ErL1z_lKd8
+    def drawJobSkillNetworkXGraph(self):
         top = self.top_skills(count=30, columns=categories)
         G = nx.Graph()
         edges = []
@@ -455,6 +468,7 @@ class CareerGraph():
         # layout = nx.shell_layout(G, nlist=[["c:" + c for c in categories], list(skill_size.keys())])
         layout = nx.kamada_kawai_layout(G)
 
+        # draw the edges
         nx.draw_networkx_edges(G, layout, width=1, edge_color="#cccccc")
 
         # draw category nodes
@@ -479,7 +493,6 @@ class CareerGraph():
         frequent_skills_edges = G.edges(frequent_skills)
         nx.draw_networkx_edges(G, layout, edgelist=frequent_skills_edges, width=1, edge_color="#bbbbbb")
 
-
         #draw remaining skill nodes
         remaining_skills = [s for s in skill_size if G.degree(s) == 1]
         remaining_skills_size = [skill_size[s] * 20 for s in remaining_skills]
@@ -490,6 +503,7 @@ class CareerGraph():
                                     node_color='#cccccc')
         nodes.set_edgecolor('#888888')
 
+        # draw labels
         nx.draw_networkx_labels(G, layout, font_size=8)
 
         plt.axis('off')

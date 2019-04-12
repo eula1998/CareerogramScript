@@ -78,6 +78,8 @@ finu_course_parser = FinUCourseParser("FinU Tracks.xlsx")
 finu_course_parser.parse()
 finu_course_tags = finu_course_parser.tags
 finu_courses = finu_course_parser.courses
+finu_courses_lookup = finu_course_parser.courses_lookup
+finu_degrees = finu_course_parser.degree_requirement_lookup
 
 
 # printDict(finu_course_tags) # py parse_data.py > ru_job_data/finu_course_tags.csv
@@ -95,56 +97,55 @@ careergraph.import_jobs(job_list=us_job_parser.jobs)
 careergraph.import_jobs(job_list=ru_job_parser.jobs)
 careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
-careergraph.set_up_skill_dataframe(make_csv=True)
-# top20 = careergraph.top_20_distribution()
+careergraph.set_up_skill_dataframe(make_csv=False)
+top20 = careergraph.top_skills(count=21)
 # writeToCSV("us_job_data/job_tag_distribution.csv", careergraph.calculate_skill_category_distribution_csv())
 # writeToCSVs("combined_data", careergraph.make_summary_csv())
 # writeToCSVs("sql_files", careergraph.generate_sql_csv())
-
-careergraph.drawNetworkXGraph()
+# careergraph.drawJobSkillNetworkXGraph()
 
 #------------------------------------------------------
 # Combined Analysis
 #------------------------------------------------------
-# wpi_degrees_skills = {}
-# for d in wpi_degrees:
-#     wpi_degrees_skills[d] = set()
-#     for c in wpi_degrees[d]:
-#         c = wpi_courses_lookup[c]
+# finu_degrees_skills = {}
+# for d in finu_degrees:
+#     finu_degrees_skills[d] = set()
+#     for c in finu_degrees[d]:
+#         c = finu_courses_lookup[c]
 #         skills = c[3]
-#         wpi_degrees_skills[d].update(skills)
+#         finu_degrees_skills[d].update(skills)
 #
 # temp_df = careergraph.skill_df.copy()
-
-## py -3 parse_data.py > combined_data/ds_wpi_match.txt
+#
+# ## py -3 parse_data.py > combined_data/wpi_job_match.txt
 # for c in categories:
 #     # c = "data scientist"
 #     l = temp_df.index[temp_df[c] > 0].tolist()
 #     print("total number of skills in " + c + ": " + str(len(l) - 1))
 #
-#     for d in wpi_degrees_skills:
+#     for d in finu_degrees_skills:
 #         count = 0
 #         print("===================================")
-#         for s in wpi_degrees_skills[d]:
+#         for s in finu_degrees_skills[d]:
 #             if s in l and s != "":
 #                 print(s)
 #                 count+=1
-#         print("total matched skills of " + d + " at WPI: " + str(count), "\t", str(count/len(l)))
+#         print("total matched skills of " + d + " at FinU: " + str(count), "\t", str(count/len(l)))
 #     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-
+#
+#
 # print("Top 20 skills")
 # for c in categories:
 #     l = top20[c]
 #     print(c)
-#     for d in wpi_degrees_skills:
+#     for d in finu_degrees_skills:
 #         count = 0
 #         print("===================================")
-#         for s in wpi_degrees_skills[d]:
+#         for s in finu_degrees_skills[d]:
 #             if s in l and s != "":
 #                 print(s)
 #                 count+=1
-#         print("total matched skills of " + d + " at WPI: " + str(count), "\t", str(count/len(l)))
+#         print("total matched skills of " + d + " at FinU: " + str(count), "\t", str(count/len(l)))
 #     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
 
@@ -161,5 +162,5 @@ careergraph.drawNetworkXGraph()
 # print("We gathered: ")
 # print("\t", job_count, "jobs from two countries in", len(categories), "different categories")
 # print("\t", course_count, "courses from two schools, out of which",
-#     len(wpi_courses_lookup), "from WPI, and", len(finu_courses), "from Financial University")
+#     len(wpi_courses_lookup), "from WPI, and", len(finu_courses_lookup), "from Financial University")
 # print("\t", int(tag_count), "tags, out of which", skill_count, "are unique skills")
