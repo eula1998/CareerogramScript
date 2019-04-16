@@ -18,12 +18,6 @@ class JobNode(Node):
         self.required = []
         self.responsibility = []
 
-class CategoryNode(Node):
-    def __init__(self, category):
-        super().__init__(category)
-        self.jobs = []
-        self.skills = {}
-
 class SkillNode(Node):
     def __init__(self, name):
         super().__init__(name)
@@ -45,3 +39,18 @@ class CourseNode(Node):
         key = school + ";" + course_number + ";" + course_name
         super().__init__(key)
         self.skills = []
+
+class CategoryNode(Node):
+    def __init__(self, category):
+        super().__init__(category)
+        self.jobs = []
+        self.skills = {}
+
+class DegreeNode(Node):
+    def __init__(self, school, degree_name):
+        self.school = school
+        self.degree_name = degree_name
+        key = school + ";" + degree_name
+        super().__init__(key)
+        self.courses = []
+        self.skills = {}

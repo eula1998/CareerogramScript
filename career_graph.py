@@ -2,7 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
-from node import CourseNode, CategoryNode, SkillNode, JobNode
+from node import CourseNode, CategoryNode, SkillNode, JobNode, DegreeNode
 
 categories = ["data scientist", "artificial intelligence", "machine learning", "software engineer", "firmware engineering"]
 
@@ -18,7 +18,9 @@ class CareerGraph():
         self.job_nodes = {}
         self.skill_nodes = {}
         self.course_nodes = {}
-        self.skill_df = None # job skill only
+        self.degree_nodes = {}
+        self.job_skill_df = None
+        self.degree_skill_df = None
         self.job_nodes_by_category = None
         self.category_nodes = {}
 
@@ -58,6 +60,18 @@ class CareerGraph():
             for t in c[3]:
                 self.add_skill_from_course(cn, cn.skills, t)
             self.course_nodes[cn.name] = cn
+
+    def import_degrees(self, school, degree_list, course_lookup):
+        for d in degree_list:
+            dn = DegreeNode(school=school, degree_name=d)
+            for c in degree_list[d]: # list of course numbers
+                cn = self.course_nodes[course_lookup[c][0] + ";" + course_lookup[c][1] +";" + course_lookup[c][2]]
+                dn.courses.append(cn)
+                for s in cn.skills:
+                    if s.name not in dn.skills:
+                        dn.skills[s.name] = 0
+                    dn.skills[s.name] += 1
+            self.degree_nodes[dn.name] = dn
 
 
 ########################################################
@@ -107,8 +121,8 @@ class CareerGraph():
             l.append(row)
         return l
 
-    def set_up_skill_dataframe(self, make_csv=False):
-        # if self.skill_df != None:
+    def set_up_job_skill_dataframe(self, make_csv=False):
+        # if self.job_skill_df != None:
         #     print("WARNING: You are recalculating the dataframe." +
         #     "This may be wasted resources if the graph has not been changed")
 
@@ -187,23 +201,23 @@ class CareerGraph():
             temp_df = pd.DataFrame(job_count_by_category)
             temp_df.to_csv(path_or_buf="./combined_data/job_count.csv", index=False)
 
-        self.skill_df = df
+        self.job_skill_df = df
 
 
     # outputs the top 20 skills for each category and each skill column
     # returns a dictionary of which the key = column heading, containing the 20
     # skills that occur in a column most frequently
-    def top_skills(self, count=20, make_csv=False, columns=None):
+    def top_job_skills(self, count=20, make_csv=False, columns=None):
         # TODO ValueError:The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
-        # if self.skill_df == None:
+        # if self.job_skill_df == None:
         #     self.set_up_skill_dataframe()
         if columns == None:
-            columns = list(self.skill_df.columns.values)
+            columns = list(self.job_skill_df.columns.values)
 
         top = {}
         # retrieves the list of columns
-        for c in [cl for cl in columns if cl in list(self.skill_df.columns.values)]:
-            temp_df = self.skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
+        for c in [cl for cl in columns if cl in list(self.job_skill_df.columns.values)]:
+            temp_df = self.job_skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
             top[c] = list(temp_df.head(count).index.values)
             # filter out the skills that do not exist in that category
             top[c] = [s for s in top[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
@@ -216,11 +230,41 @@ class CareerGraph():
             temp_df.to_csv(path_or_buf="./combined_data/top%s.csv" %(str(count)), index=False)
         return top
 
+    def set_up_course_skill_dataframe(self, make_csv=False):
+        df = pd.DataFrame(index=self.skill_nodes.keys(), columns=self.degree_nodes.keys(), dtype=int)
+        for d in self.degree_nodes:
+            dn = self.degree_nodes[d]
+            for s in dn.skills:
+                initialize_df_cell_and_incr(df, s, d)
+        # sort the columns by name
+        df = df.reindex(sorted(df.columns), axis=1)
+        self.degree_skill_df = df
+
+
+    def top_degree_skills(self, count=20, make_csv=False, columns=None):
+        if columns == None:
+            columns = list(self.degree_skill_df.columns.values)
+        top = {}
+
+        # retrieves the list of columns
+        for c in [cl for cl in columns if cl in list(self.degree_skill_df.columns.values)]:
+            temp_df = self.degree_skill_df.sort_values(c, axis=0, ascending=False, kind='quicksort', na_position='last')
+            top[c] = list(temp_df.head(count).index.values)
+            # filter out the skills that do not exist in that column
+            top[c] = [s for s in top[c] if not math.isnan(temp_df.at[s, c]) and temp_df.at[s, c] != 0 and s != "" and s != '']
+
+        if make_csv:
+            for c in top:
+                while len(top[c]) < count:
+                    top[c].append(None)
+            temp_df = pd.DataFrame(top)
+            temp_df.to_csv(path_or_buf="./combined_data/top%s_degrees.csv" %(str(count)), index=False)
+        return top
 
     # percentage of jobs need the skill in each categories
-    def top_20_distribution(self, make_csv=True, top20=None):
+    def job_skill_top_20_distribution(self, make_csv=True, top20=None):
         if top20 == None:
-            top20 = self.top_skills(20)
+            top20 = self.top_job_skills(20)
         for c in top20:
             while len(top20[c]) < 20:
                 top20[c].append(None)
@@ -244,13 +288,13 @@ class CareerGraph():
                 # temp_df.at[i, columns[c]] = 1
                 if temp_df.at[i, c] != None:
                     # percentage = numberOfSkillsInThatCategory / number_of_jobs_in_that_job_category
-                    temp_df.at[i, columns[c]] = self.skill_df.at[temp_df.at[i, c], c] / len(self.job_nodes_by_category[c.rsplit(' ', 1)[0]])
+                    temp_df.at[i, columns[c]] = self.job_skill_df.at[temp_df.at[i, c], c] / len(self.job_nodes_by_category[c.rsplit(' ', 1)[0]])
 
         for c in categories:
             temp_df[c + " distribution"] = 0.0
             for i in range(len(temp_df.index.values)):
                 if temp_df.at[i, c] != None:
-                    temp_df.at[i, c + " distribution"] = self.skill_df.at[temp_df.at[i, c], c] / (len(self.job_nodes_by_category["ru " + c]) + len(self.job_nodes_by_category["us " + c]))
+                    temp_df.at[i, c + " distribution"] = self.job_skill_df.at[temp_df.at[i, c], c] / (len(self.job_nodes_by_category["ru " + c]) + len(self.job_nodes_by_category["us " + c]))
 
         # sort the columns by name
         temp_df = temp_df.reindex(sorted(temp_df.columns), axis=1)
@@ -386,7 +430,7 @@ class CareerGraph():
         # keys = list(self.skill_nodes.keys())
 
         # selects the top 883 skills in the database, because Azure only takes that many columns
-        keys = (self.top_skills(count=883, make_csv=False, columns=["all"]))["all"]
+        keys = (self.top_job_skills(count=883, make_csv=False, columns=["all"]))["all"]
         keys.sort()
         file = {}
 
@@ -442,7 +486,7 @@ class CareerGraph():
 # http://jonathansoma.com/lede/algorithms-2017/classes/networks/networkx-graphs-from-source-target-dataframe/
 # https://www.youtube.com/watch?v=1ErL1z_lKd8
     def drawJobSkillNetworkXGraph(self):
-        top = self.top_skills(count=30, columns=categories)
+        top = self.top_job_skills(count=30, columns=categories)
         G = nx.Graph()
         edges = []
 
@@ -496,6 +540,82 @@ class CareerGraph():
         #draw remaining skill nodes
         remaining_skills = [s for s in skill_size if G.degree(s) == 1]
         remaining_skills_size = [skill_size[s] * 20 for s in remaining_skills]
+        nodes = nx.draw_networkx_nodes(G,
+                                    layout,
+                                    nodelist=remaining_skills,
+                                    node_size=remaining_skills_size,
+                                    node_color='#cccccc')
+        nodes.set_edgecolor('#888888')
+
+        # draw labels
+        nx.draw_networkx_labels(G, layout, font_size=8)
+
+        plt.axis('off')
+        plt.show()
+
+
+    def drawDegreeSkillNetworkXGraph(self, top_count=20):
+        top = self.top_degree_skills(count=top_count)
+        G = nx.Graph()
+        edges = []
+
+        degree_list = [d for d in self.degree_nodes if self.degree_nodes[d].school == "wpi"]
+        degrees = {}
+        for d in degree_list:
+            degrees[d] = self.degree_nodes[d]
+
+        all_nodes = set()
+        all_nodes.update(degree_list)
+
+        for d in degree_list:
+            dn = degrees[d]
+            for s in dn.skills:
+                if s in top[d]:
+                    edges.append((s, d))
+                    all_nodes.add(s)
+        G.add_edges_from(edges)
+
+        skill_size = {}
+        for d in degree_list:
+            for s in top[d]:
+                if s not in skill_size:
+                    skill_size[s] = 0
+                skill_size[s] += self.degree_nodes[d].skills[s]
+
+        plt.figure(figsize=(5, 5))
+        # layout = nx.shell_layout(G, nlist=[degree_list, list(skill_size.keys())])
+        # layout = nx.kamada_kawai_layout(G)
+        # layout=nx.spring_layout(G)
+        layout = nx.spectral_layout(G)
+
+        # draw the edges
+        nx.draw_networkx_edges(G, layout, width=1, edge_color="#cccccc")
+
+        # draw category nodes
+        degree_size = [len(degrees[d].skills) * 15 for d in degree_list]
+        nodes = nx.draw_networkx_nodes(G,
+                       layout,
+                       nodelist=degree_list,
+                       node_size=degree_size,
+                       node_color='lightblue')
+        nodes.set_edgecolor('#888888')
+
+
+        # draw frequent skill nodes, size based on frequency of appearances
+        frequent_skills = [s for s in skill_size if G.degree(s) > 1]
+        frequent_skills_size = [skill_size[s] * 30 for s in frequent_skills]
+        nodes = nx.draw_networkx_nodes(G,
+                                    layout,
+                                    nodelist=frequent_skills,
+                                    node_color='#fc8d62',
+                                    node_size=frequent_skills_size)
+        nodes.set_edgecolor('#888888')
+        frequent_skills_edges = G.edges(frequent_skills)
+        nx.draw_networkx_edges(G, layout, edgelist=frequent_skills_edges, width=1, edge_color="#bbbbbb")
+
+        #draw remaining skill nodes
+        remaining_skills = [s for s in skill_size if G.degree(s) == 1]
+        remaining_skills_size = [skill_size[s] * 40 for s in remaining_skills]
         nodes = nx.draw_networkx_nodes(G,
                                     layout,
                                     nodelist=remaining_skills,
