@@ -99,15 +99,15 @@ careergraph.import_courses(course_list=wpi_course_parser.courses)
 careergraph.import_courses(course_list=finu_course_parser.courses)
 careergraph.import_degrees(school="wpi", degree_list=wpi_degrees, course_lookup=wpi_courses_lookup)
 careergraph.import_degrees(school="finu", degree_list=finu_degrees, course_lookup=finu_courses_lookup)
-careergraph.set_up_job_skill_dataframe(make_csv=False)
-careergraph.set_up_course_skill_dataframe(make_csv=False)
+# careergraph.set_up_job_skill_dataframe(make_csv=False)
+# careergraph.set_up_course_skill_dataframe(make_csv=False)
 
 # top20 = careergraph.top_skills(count=21)
 # writeToCSV("us_job_data/job_tag_distribution.csv", careergraph.calculate_skill_category_distribution_csv())
 # writeToCSVs("combined_data", careergraph.make_summary_csv())
-# writeToCSVs("sql_files", careergraph.generate_sql_csv())
+writeToCSVs("sql_files", careergraph.generate_sql_csv())
 # careergraph.drawJobSkillNetworkXGraph()
-careergraph.drawDegreeSkillNetworkXGraph(top_count=10)
+# careergraph.drawDegreeSkillNetworkXGraph(top_count=10)
 
 #------------------------------------------------------
 # Combined Analysis

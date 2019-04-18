@@ -404,14 +404,14 @@ class CareerGraph():
                 files["job_responsibility"].append(row)
 
         # category_all_requirement: id_category, id_skill
-        files["category_all_requirement"] = []
-        row = ["id_category", "id_skill"]
-        files["category_all_requirement"].append(row)
-        for c in self.category_nodes:
-            cn = self.category_nodes[c]
-            for s in cn.skills:
-                row = [category_id_lookup[c], skill_id_lookup[s]]
-                files["category_all_requirement"].append(row)
+        # files["category_all_requirement"] = []
+        # row = ["id_category", "id_skill"]
+        # files["category_all_requirement"].append(row)
+        # for c in self.category_nodes:
+        #     cn = self.category_nodes[c]
+        #     for s in cn.skills:
+        #         row = [category_id_lookup[c], skill_id_lookup[s]]
+        #         files["category_all_requirement"].append(row)
 
         # course_skill: id_course, id_skill
         files["course_skill"] = []
@@ -422,6 +422,46 @@ class CareerGraph():
             for s in cn.skills:
                 row = [course_id_lookup[c], skill_id_lookup[s.name]]
                 files["course_skill"].append(row)
+
+        # category_minimum_requirement: id_category, id_skill
+        files["category_minimum_requirement"] = []
+        row = ["id_category", "id_skill"]
+        files["category_minimum_requirement"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.minimum:
+                row = [category_id_lookup[jn.category], skill_id_lookup[s.name]]
+                files["category_minimum_requirement"].append(row)
+
+        # category_preferred_requirement: id_category, id_skill
+        files["category_preferred_requirement"] = []
+        row = ["id_category", "id_skill"]
+        files["category_preferred_requirement"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.preferred:
+                row = [category_id_lookup[jn.category], skill_id_lookup[s.name]]
+                files["category_preferred_requirement"].append(row)
+
+        # category_required_experience: id_category, id_skill
+        files["category_required_experience"] = []
+        row = ["id_category", "id_skill"]
+        files["category_required_experience"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.required:
+                row = [category_id_lookup[jn.category], skill_id_lookup[s.name]]
+                files["category_required_experience"].append(row)
+
+        # category_responsibility: id_category, id_skill
+        files["category_responsibility"] = []
+        row = ["id_category", "id_skill"]
+        files["category_responsibility"].append(row)
+        for j in self.job_nodes:
+            jn = self.job_nodes[j]
+            for s in jn.responsibility:
+                row = [category_id_lookup[jn.category], skill_id_lookup[s.name]]
+                files["category_responsibility"].append(row)
 
         return files
 
@@ -439,12 +479,20 @@ class CareerGraph():
         row.extend(keys)
         all_list.append(row)
 
+        # category_factor = {
+        #     "data scientist" : 1,
+        #     "artificial intelligence" : 4,
+        #     "machine learning" : 6,
+        #     "software engineer" : 4,
+        #     "firmware engineering" : 20
+        # }
+
         category_factor = {
             "data scientist" : 1,
-            "artificial intelligence" : 4,
-            "machine learning" : 6,
-            "software engineer" : 4,
-            "firmware engineering" : 20
+            "artificial intelligence" : 1,
+            "machine learning" : 1,
+            "software engineer" : 1,
+            "firmware engineering" : 1,
         }
         for c in categories:
             l = []
