@@ -607,7 +607,9 @@ class CareerGraph():
         G = nx.Graph()
         edges = []
 
-        degree_list = [d for d in self.degree_nodes if self.degree_nodes[d].school == "wpi"]
+        # degree_list = [d for d in self.degree_nodes if self.degree_nodes[d].school == "wpi"]
+        degree_list = self.degree_nodes
+
         degrees = {}
         for d in degree_list:
             degrees[d] = self.degree_nodes[d]
@@ -630,27 +632,29 @@ class CareerGraph():
                     skill_size[s] = 0
                 skill_size[s] += self.degree_nodes[d].skills[s]
 
+        frequent_skills = [s for s in skill_size if G.degree(s) > 1]
+        remaining_skills = [s for s in skill_size if G.degree(s) == 1]
+
+        G.remove_nodes_from(remaining_skills)
+
         plt.figure(figsize=(5, 5))
         # layout = nx.shell_layout(G, nlist=[degree_list, list(skill_size.keys())])
         # layout = nx.kamada_kawai_layout(G)
-        # layout=nx.spring_layout(G)
-        layout = nx.spectral_layout(G)
-
-        # draw the edges
-        nx.draw_networkx_edges(G, layout, width=1, edge_color="#cccccc")
+        layout=nx.spring_layout(G)
+        # layout = nx.spectral_layout(G)
 
         # draw category nodes
-        degree_size = [len(degrees[d].skills) * 15 for d in degree_list]
+        degree_size = [len(degrees[d].skills) * 5 for d in degree_list]
         nodes = nx.draw_networkx_nodes(G,
                        layout,
                        nodelist=degree_list,
                        node_size=degree_size,
                        node_color='lightblue')
         nodes.set_edgecolor('#888888')
-
+        # degree_edges = G.edges(degree_list)
+        # nx.draw_networkx_edges(G, layout, edgelist=degree_edges, width=1, edge_color="#bbbbbb")
 
         # draw frequent skill nodes, size based on frequency of appearances
-        frequent_skills = [s for s in skill_size if G.degree(s) > 1]
         frequent_skills_size = [skill_size[s] * 30 for s in frequent_skills]
         nodes = nx.draw_networkx_nodes(G,
                                     layout,
@@ -662,17 +666,28 @@ class CareerGraph():
         nx.draw_networkx_edges(G, layout, edgelist=frequent_skills_edges, width=1, edge_color="#bbbbbb")
 
         #draw remaining skill nodes
-        remaining_skills = [s for s in skill_size if G.degree(s) == 1]
-        remaining_skills_size = [skill_size[s] * 40 for s in remaining_skills]
-        nodes = nx.draw_networkx_nodes(G,
-                                    layout,
-                                    nodelist=remaining_skills,
-                                    node_size=remaining_skills_size,
-                                    node_color='#cccccc')
-        nodes.set_edgecolor('#888888')
+
+        # remaining_skills_size = [skill_size[s] * 40 for s in remaining_skills]
+        # remaining_skills_size = [0 for s in remaining_skills]
+        # nodes = nx.draw_networkx_nodes(G,
+        #                             layout,
+        #                             nodelist=remaining_skills,
+        #                             node_size=remaining_skills_size,
+        #                             node_color='#ffffff')
+        # nodes.set_edgecolor('#ffffff')
+        remaining_skills_edges = G.edges(remaining_skills)
+        nx.draw_networkx_edges(G, layout, edgelist=remaining_skills_edges, width=1, edge_color="#cccccc")
+
+        labels = {}
+        for d in degree_list:
+            labels[d] = d
+        for s in frequent_skills:
+            labels[s] = s
+        # for s in remaining_skills:
+        #     labels[s] = s
 
         # draw labels
-        nx.draw_networkx_labels(G, layout, font_size=8)
+        nx.draw_networkx_labels(G, layout, labels=labels, font_size=8)
 
         plt.axis('off')
         plt.show()
